@@ -13,6 +13,7 @@ Students: Implement run_all_checks() and _aggregate(). Everything else is provid
 
 from __future__ import annotations
 
+import asyncio
 import time
 from dataclasses import dataclass
 
