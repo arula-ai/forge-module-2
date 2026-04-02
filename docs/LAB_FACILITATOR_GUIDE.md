@@ -419,6 +419,22 @@ fi
 echo "=========================="
 ```
 
+### AI-Assisted Grading (GitHub Copilot Chat)
+
+Students can self-grade using GitHub Copilot Chat. The repo includes:
+- `.github/copilot-instructions.md` — project context for Copilot
+- `grade-lab.prompt.md` — complete grading rubric as a Copilot prompt
+
+**Student workflow:**
+1. Open Copilot Chat in VS Code
+2. Select Claude Sonnet 4 (recommended) from the model dropdown
+3. Ask: "Grade my lab using the rubric in grade-lab.prompt.md"
+4. Review the generated `GRADE_REPORT.md`
+
+**Facilitator note:** The AI grader is a teaching tool, not a replacement for your judgment. Use its output as a conversation starter: "The grader flagged X — what do you think about that?" The grader checks code quality patterns (proper use of helpers, error handling structure, copy-paste detection) that are hard to verify manually at scale.
+
+**Limitations:** The grader cannot run tests itself — it relies on student-provided test output. It may give slightly different scores across models. The rubric is designed for Claude Sonnet 4 but works with any frontier model.
+
 ---
 
 ## Common Student Issues & Solutions
@@ -478,6 +494,13 @@ classification = {}  # Default empty dict
 **Response:** This is expected. Tests are designed for the cached client.
 Explain that production tests would use mocking or evaluation metrics
 rather than exact output matching.
+
+### Issue 6: Students don't know what to do in the experiment phase
+
+**Response:** Point them to the three structured experiments in the guide:
+1. Temperature and Confidence — change MODEL_TEMPERATURE to 0.9, run 3 times
+2. Break and Recover — comment out a stage, observe graceful degradation
+3. The Unknown Incident — add INC-005 (security), observe fallback routing
 
 ---
 
