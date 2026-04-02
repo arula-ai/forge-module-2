@@ -509,6 +509,22 @@ Buffer:  (10 min): Troubleshooting / bonus challenges
 
 ---
 
+#### Slide: Lab Kickoff — How This Lab Works
+
+**Speaker Notes:**
+> This lab is designed for all experience levels. Go at your own pace.
+> If you're stuck, look for the "If You're Stuck" boxes in the guide — they diagnose common problems.
+> If you finish a pattern early, look for the "Stretch Goal" box to go deeper.
+> Don't just get the tests green — understand *why* each pattern exists.
+> When you're completely done, use the AI grader to evaluate your work.
+
+**On-Screen:**
+- Lab structure: Setup → Chain → Router → Parallel → Orchestrator → Experiment → Submit → Grade
+- "If You're Stuck" / "Stretch Goal" callouts highlighted
+- Target: 20 tests passing
+
+---
+
 ### — LAB WORK TIME (90 minutes) —
 
 #### Slide 23: Lab In Progress
@@ -524,6 +540,15 @@ Buffer:  (10 min): Troubleshooting / bonus challenges
 65–80 min: Check orchestrators. Help with state management.
 80–90 min: Encourage experiments. Suggest bonus challenges.
 ```
+
+**Experiment Phase Talking Points:**
+
+Three guided experiments (3-4 min each):
+1. **Temperature and Confidence** — Change temp to 0.9, run 3 times. "Watch how randomness affects classification reliability."
+2. **Break and Recover** — Comment out a stage, run pipeline. "This is graceful degradation — a production pattern."
+3. **The Unknown Incident** — Add a security incident. "The system handles novel input through fallback routing."
+
+Expected discussion: "Why would you want low temperature in production for classification tasks?"
 
 **Bonus Challenges (for fast finishers):**
 1. Add a "severity scoring" step to the chain
@@ -545,6 +570,11 @@ Pull up 2-3 student implementations (ask for volunteers) and compare approaches.
 2. "What happened when you changed the model temperature?"
 3. "Did anyone's parallel checks return in a surprising order?"
 4. "What would break first if you pointed this at GPT-4 instead of a local model?"
+
+**Additional discussion questions:**
+- "What did the AI grader catch that you missed?"
+- "What would you add to the grading rubric?"
+- "Is automated code review fair? What can it evaluate well, and what can't it?"
 
 ---
 
@@ -600,6 +630,25 @@ Pull up 2-3 student implementations (ask for volunteers) and compare approaches.
 
 ---
 
+#### Slide 29: Grade Your Work with AI
+
+**Speaker Notes:**
+> When you've completed the lab and written your reflection, you can use
+> GitHub Copilot Chat to grade your work. Open Copilot Chat, select
+> Claude Sonnet 4 from the model dropdown, and ask it to grade your lab
+> using the rubric in grade-lab.prompt.md. It evaluates four dimensions:
+> technical correctness, code quality, report quality, and implementation style.
+> This is a teaching tool — use the feedback to improve, not just the score.
+
+**On-Screen:**
+- Screenshot of Copilot Chat grading interaction
+- The 4 evaluation dimensions with point breakdown
+- Example GRADE_REPORT.md output
+
+**Facilitator note:** "The grading agent is not the final grade. Use its output as a conversation starter. Ask students: 'What did the grader catch that you missed? What would you add to the rubric?'"
+
+---
+
 ## Appendix: Instructor Resources
 
 ### Timing Cheat Sheet (total: 240 min)
@@ -616,6 +665,12 @@ Pull up 2-3 student implementations (ask for volunteers) and compare approaches.
 | Lab Intro | 15 min | 12:30–12:45 |
 | Lab Work | 90 min | 12:45–2:15 |
 | Debrief | 30 min | 2:15–2:45 |
+
+### Differentiated Pacing Guidance
+
+- At each phase checkpoint, scan the room. Students who finished early should be working on stretch goals, not idle.
+- Students stuck past the time marker: point them to the "If You're Stuck" block first. Only intervene directly if the block doesn't resolve it.
+- The most common facilitator mistake is helping too quickly. The struggle is where learning happens. Give them 2-3 minutes with the guide before stepping in.
 
 ### Backup Plans
 
