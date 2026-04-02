@@ -109,6 +109,16 @@ async execute(state) {
 npx vitest run --reporter=verbose -- DiagnosticChain
 ```
 
+> **Stretch Goal:** Add a 4th step that generates a severity score 1-10. Does your chain still work with 4 steps? Do the existing tests still pass? What would you need to add to `cached_responses.json` to make this work in cached mode?
+
+<details>
+<summary>If you're stuck on the Chain</summary>
+
+- `results` is empty: Make sure you're calling `response.asJson()` and storing the return value
+- Only 1-2 steps complete: Your catch block might be re-throwing. Catch errors per step, push to `state.errors`, and continue
+- `TypeError: formatPrompt is not a function`: It's a module-level function, not a method
+</details>
+
 ---
 
 ## Phase 3: Build the Router (15 minutes)
@@ -176,7 +186,7 @@ async route(incident) {
   console.log(chalk.cyan(`  🔀 Routing to: ${handler.name}`));
   const handlerResponse = await handleIncident(this.llm, handler, incident);
 
-  return [routeResult, handlerResponse];
+  return { routeResult, handlerResponse };
 }
 ```
 
@@ -186,6 +196,16 @@ async route(incident) {
 ```bash
 npx vitest run --reporter=verbose -- IncidentRouter
 ```
+
+> **Stretch Goal:** What happens if you set `confidenceThreshold` to `0.0`? To `1.0`? Try both. Can you write a test that verifies edge-case behavior at these extremes?
+
+<details>
+<summary>If you're stuck on the Router</summary>
+
+- Everything classifies as `general/other`: Print your prompt to verify incident details are included
+- `matchCategory` returns OTHER: Pass `data.category` (the string), not the whole object
+- Fallback test fails: Update `routeResult.handlerName` when using the fallback handler
+</details>
 
 ---
 
@@ -270,6 +290,16 @@ a `{status, value}` or `{status, reason}` result.
 npx vitest run --reporter=verbose -- ParallelHealthChecker
 ```
 
+> **Stretch Goal:** Add timing output showing wall-clock time for the parallel run. Then change your implementation to run checks sequentially (one at a time with await in a loop). Compare the wall-clock times. How much faster is the parallel version? (In cached mode they'll be similar — why?)
+
+<details>
+<summary>If you're stuck on Parallel</summary>
+
+- Tests hang forever: You're using `await` in a loop. Create all promises first, then `await Promise.allSettled(promises)`
+- One failure kills all checks: Use `Promise.allSettled` (NOT `Promise.all`). allSettled never rejects.
+- `outcome.value` is undefined: Check `outcome.status === 'fulfilled'` before accessing `.value`
+</details>
+
 ---
 
 ## Phase 5: Build the Orchestrator (15 minutes)
@@ -290,7 +320,7 @@ async processIncident(incident) {
   // ── Stage 1: Classify & Route ──
   console.log(chalk.bold('\n  Stage 1: Classification & Routing'));
   try {
-    const [routeResult, handlerResponse] = await this.router.route(incident);
+    const { routeResult, handlerResponse } = await this.router.route(incident);
     classification = {
       category: routeResult.category,
       confidence: routeResult.confidence,
@@ -360,6 +390,16 @@ async processIncident(incident) {
 npx vitest run
 ```
 
+> **Stretch Goal:** What happens if Stage 1 (classification) fails completely? Does Stage 2 (health checks) still run? Deliberately break `this.router.route()` by making it throw, then run the pipeline. Verify that your error handling lets the remaining stages continue.
+
+<details>
+<summary>If you're stuck on the Orchestrator</summary>
+
+- `ReferenceError: classification is not defined`: Initialize all result variables BEFORE the try blocks
+- Only 1-2 stages run: Each stage needs its own independent try/catch. Don't nest them.
+- `createChainState is not defined`: Add `import { createChainState } from './chain.js'` at the top
+</details>
+
 ---
 
 ## Phase 6: Run & Experiment (10 minutes)
@@ -375,7 +415,29 @@ node agent_forge.js --incident INC-001
 npm run start:cached
 ```
 
-Try changing `MODEL_TEMPERATURE` in `.env` and observe the differences.
+### Experiment 1: Temperature and Confidence
+
+**Do:** Change `MODEL_TEMPERATURE` to `0.9` in `.env`. Run `node agent_forge.js --incident INC-001` (live, NOT cached) three times.
+
+**Observe:** Does the classification confidence change? Are the results consistent across runs?
+
+**Learn:** Higher temperature = more randomness = less predictable classification. Cached mode won't show this — that's the point of caching.
+
+### Experiment 2: Break and Recover
+
+**Do:** Comment out the health check stage in your `processIncident()`. Run with `--cached`.
+
+**Observe:** Does the pipeline complete? What does the report look like with a missing stage?
+
+**Learn:** Independent try/catch per stage = graceful degradation. A broken health checker shouldn't stop diagnosis.
+
+### Experiment 3: The Unknown Incident
+
+**Do:** Add INC-005 (a security incident) to `data/incidents.json` and run `node agent_forge.js --incident INC-005 --cached`.
+
+**Observe:** Which category does it get routed to? Is there a handler for it?
+
+**Learn:** The router falls back to `general/other` for unknown types. Production systems add new handlers as new categories emerge.
 
 ---
 
@@ -391,6 +453,16 @@ git add -A
 git commit -m "feat: complete Module 2 lab - all 4 agentic patterns (Node.js)"
 git push origin main
 ```
+
+---
+
+## Grade Your Work
+
+Open **GitHub Copilot Chat** in your IDE. For best results, select **Claude Sonnet 4** from the model dropdown. Then ask:
+
+> "Grade my lab using the rubric in grade-lab.prompt.md"
+
+Review the generated `GRADE_REPORT.md` in your track directory.
 
 ---
 
