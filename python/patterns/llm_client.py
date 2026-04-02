@@ -105,12 +105,19 @@ class CachedLLMClient(LLMClient):
     async def chat(
         self, prompt: str, system: str = "", temperature: float | None = None
     ) -> LLMResponse:
-        """Match the prompt against cached responses using keyword rules."""
+        """Match the prompt against cached responses using keyword rules.
+
+        Always returns a valid LLMResponse (never raises). If no rule matches,
+        returns a JSON error object. Results are deterministic.
+        """
         p = prompt.lower()
         s = system.lower()
 
         key = self._match(p, s)
-        content = json.dumps(self.cache.get(key, {"error": "No cached response matched", "status": "unknown"}))
+        if key is not None:
+            content = json.dumps(self.cache[key])
+        else:
+            content = json.dumps({"error": "No cached response matched", "status": "unknown"})
         return LLMResponse(content=content, duration_ms=1.0)
 
     def _match(self, prompt: str, system: str) -> str | None:
@@ -124,7 +131,7 @@ class CachedLLMClient(LLMClient):
                 return "classify_billing"
             if any(kw in prompt for kw in ("503", "gateway", "upstream", "circuit breaker")):
                 return "classify_network"
-            if any(kw in prompt for kw in ("password reset", "email queue", "queue depth")):
+            if any(kw in prompt for kw in ("password reset", "email", "queue depth")):
                 return "classify_general"
 
         # Rules 5-9: Handler responses (check SYSTEM prompt)
