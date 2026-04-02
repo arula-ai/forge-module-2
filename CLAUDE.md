@@ -54,7 +54,7 @@ The 4 patterns and their student-implemented methods:
 - Wraps Ollama `/api/chat` endpoint
 - `LLMClient` for live inference, `CachedLLMClient` for deterministic responses
 - Students do NOT modify this file
-- `CachedLLMClient` keyword matching: inspects prompt for domain keywords + context keywords ("status"/"health"/"check" for parallel checks, "classify" for router) to select cached response key
+- `CachedLLMClient` keyword matching: uses incident-specific content keywords (NOT category names) for classification, system prompt inspection for handler responses, and context keywords for chain/parallel. See spec Section 2 for the full 17-rule matching algorithm. Rules are numbered and must be evaluated in exact order.
 
 ### Testing
 - All tests use `CachedLLMClient` — they MUST pass without Ollama running

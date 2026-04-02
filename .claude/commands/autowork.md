@@ -290,10 +290,12 @@ cd node && npx vitest run
 - Prompt templates use template literals or manual string replacement
 
 ### When Working on LLM Client Issues
-- `CachedLLMClient` keyword matching is CRITICAL for test determinism
-- Match rules are case-insensitive, evaluated top-to-bottom, first match wins
+- `CachedLLMClient` keyword matching is CRITICAL for test determinism — see spec Section 2 for the full 17-rule algorithm
+- Classification matching uses INCIDENT-SPECIFIC keywords (e.g., "connection pool" for database), NOT category names (because all categories are listed in every classify prompt)
+- Handler matching inspects the SYSTEM prompt parameter (not user prompt) for specialist domain keywords
+- Match rules are case-insensitive, numbered, and MUST be evaluated in exact spec order — first match wins
 - Must handle markdown code fences in `as_json()` / `asJson()`
-- Handler responses need separate cached entries (handler_database, handler_billing, etc.)
+- Handler responses use separate cached entries (handler_database, handler_billing, etc.)
 
 ### When Working on Test Suite Issues
 - All tests MUST use `CachedLLMClient` — no Ollama dependency

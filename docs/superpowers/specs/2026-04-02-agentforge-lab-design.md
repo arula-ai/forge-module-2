@@ -102,21 +102,41 @@ Same interface, camelCase:
 
 ### Keyword Matching Strategy
 
-The `CachedLLMClient` inspects the prompt for keywords to select the right cached response:
-- Prompt contains "classify" + "database" → `classify_database`
-- Prompt contains "classify" + "billing"/"payment" → `classify_billing`
-- Prompt contains "classify" + "network"/"gateway"/"503" → `classify_network`
-- Prompt contains "classify" + "email"/"password" → `classify_general`
-- Prompt contains "parse" or "log" (in chain context) → `chain_parse`
-- Prompt contains "root cause" or "analyze" → `chain_analyze`
-- Prompt contains "recommend" → `chain_recommend`
-- Prompt contains "memory" + "status" or "health" → `parallel_memory_check`
-- Prompt contains "cpu" + "status" or "health" → `parallel_cpu_check`
-- Prompt contains "disk" + "status" or "health" → `parallel_disk_check`
-- Prompt contains "network" + "status" or "health" → `parallel_network_check`
-- Fallback: returns a generic "unable to process" response
+The `CachedLLMClient` inspects the **lowercased prompt** to select a cached response. Rules are evaluated in the numbered order below; first match wins. Implementations MUST evaluate rules in this exact sequence.
 
-Note: The health check prompts include "status" or "health" keywords from their `prompt_template`, which distinguishes them from classification prompts that contain similar domain keywords. Match rules are evaluated top-to-bottom; first match wins.
+**IMPORTANT DESIGN CONSTRAINT:** Classification prompts list ALL category names, so matching on category keywords (e.g., "database") would match every classification call. Instead, classification matching uses **incident-specific keywords** from the title/description that will appear in the prompt alongside "classify."
+
+**Rule 1-4: Classification (router classify calls)**
+Match: prompt contains "classify" AND incident-specific content keywords:
+1. "classify" + ("connection pool" or "postgresql" or "hikari") → `classify_database`
+2. "classify" + ("double charge" or "duplicate" or "overcharge" or "refund") → `classify_billing`
+3. "classify" + ("503" or "gateway" or "upstream" or "circuit breaker") → `classify_network`
+4. "classify" + ("password reset" or "email" or "queue depth") → `classify_general`
+
+**Rule 5-9: Handler responses (router handler.handle calls)**
+Match: prompt is from a handler (system prompt contains "specialist" or "handler"). The handler's system prompt contains domain keywords:
+5. system prompt contains "database" → `handler_database`
+6. system prompt contains "billing" or "payment" → `handler_billing`
+7. system prompt contains "network" → `handler_network`
+8. system prompt contains "email" → `handler_email`
+9. fallback handler (no domain match in system prompt) → `handler_general`
+
+Note: Handler matching checks the **system** prompt parameter, not the user prompt. This is because the system prompt is set per-handler and contains the specialist domain keyword. The `chat()` method receives both `prompt` and `system` parameters.
+
+**Rule 10-12: Chain steps (diagnostic chain calls)**
+10. prompt contains "parse" or "extract" (and does NOT contain "classify") → `chain_parse`
+11. prompt contains "root cause" or "analyze" (and does NOT contain "classify") → `chain_analyze`
+12. prompt contains "recommend" → `chain_recommend`
+
+**Rule 13-16: Parallel health checks**
+Match: prompt contains subsystem keyword AND health-check context keywords:
+13. prompt contains "memory" + ("health" or "status" or "check" or "assess") → `parallel_memory_check`
+14. prompt contains "cpu" + ("health" or "status" or "check" or "assess") → `parallel_cpu_check`
+15. prompt contains "disk" + ("health" or "status" or "check" or "assess") → `parallel_disk_check`
+16. prompt contains "network" + ("health" or "status" or "check" or "assess") → `parallel_network_check`
+
+**Rule 17: Fallback**
+17. No match → `{"error": "No cached response matched", "status": "unknown"}`
 
 ---
 
@@ -154,6 +174,7 @@ Each file provides data structures and helpers. Students implement core methods 
 - `RouteResult` — `category`, `confidence`, `reasoning`, `handler_name`
 - `HandlerResponse` — `handler`, `summary`, `priority`, `escalation_needed`
 - `IncidentRouter` with `_build_handlers()` (5 handlers), `_match_category()` fuzzy matcher, `confidence_threshold = 0.6`
+- `_match_category(raw: str) -> IncidentCategory` — normalizes the LLM's free-text category string to an enum value. Algorithm: lowercase and strip whitespace from `raw`. First try exact match against enum values. If no exact match, check if `raw` contains any of these substrings: "database" → DATABASE, "network" → NETWORK, "billing" or "payment" → BILLING, "email" → EMAIL. If still no match, return OTHER.
 - `handleIncident(llm, handler, incident)` module-level helper (Node)
 
 **Student implements:**

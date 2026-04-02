@@ -213,7 +213,7 @@ This is a TEACHING lab. The code must be:
 |-------|---------|---------------|
 | BLOCKER | Must fix. Missing feature, spec mismatch, broken test, bad student experience. | YES |
 | WARNING | Must fix. Missing docstring, inconsistent style, unclear TODO stub. | YES |
-| SUGGESTION | Must fix. Optimization, better prompt wording, improved error message. | YES |
+| SUGGESTION | Note for improvement. Better prompt wording, improved error message. | NO |
 | INFO | Observation only. No action needed. | NO |
 
 ## Integration with /autowork
@@ -228,5 +228,5 @@ The `/autowork` command MUST call `/review-pr` before merging ANY pull request. 
 2. **Spec is the source of truth** — code must match the design spec exactly
 3. **Student experience matters** — this is a teaching lab, not just working code
 4. **Tests prove it works** — tests must use CachedLLMClient and be deterministic
-5. **Fix everything** — blockers, warnings, and suggestions must all be resolved
+5. **Fix blockers and warnings** — suggestions are noted but don't block merge
 6. **Both tracks are equal** — same level of quality for Python and Node
