@@ -3,7 +3,7 @@
  *
  * All tests use CachedLLMClient for deterministic, offline testing.
  * Tests will FAIL until students implement the patterns.
- * Once implemented, all 18 tests should pass.
+ * Once implemented, all 20 tests should pass.
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
@@ -44,7 +44,7 @@ beforeAll(() => {
   orchestrator = new IncidentOrchestrator(router, healthChecker, chain);
 });
 
-// ── DiagnosticChain (3 tests) ──────────────────────────────────────────────
+// ── DiagnosticChain (4 tests) ──────────────────────────────────────────────
 
 describe('DiagnosticChain', () => {
   it('has three steps', () => {
@@ -64,9 +64,22 @@ describe('DiagnosticChain', () => {
     const result = await chain.execute(state);
     expect(result.stepsCompleted).toHaveLength(3);
   });
+
+  it('handles errors gracefully without crashing', async () => {
+    const errorChain = new DiagnosticChain(llm);
+    errorChain.steps[1] = {
+      name: 'Bad Step',
+      systemPrompt: 'test',
+      userPromptTemplate: '{nonexistent_key}',
+      outputKey: 'bad_result',
+    };
+    const state = createChainState(incidents['INC-001']);
+    const result = await errorChain.execute(state);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
 });
 
-// ── IncidentRouter (6 tests) ───────────────────────────────────────────────
+// ── IncidentRouter (7 tests) ───────────────────────────────────────────────
 
 describe('IncidentRouter', () => {
   it('classifies database incident', async () => {
@@ -82,6 +95,12 @@ describe('IncidentRouter', () => {
   it('classifies network incident', async () => {
     const result = await router.classify(incidents['INC-003']);
     expect(result.category).toBe(IncidentCategory.NETWORK);
+  });
+
+  it('classify returns confidence between 0 and 1', async () => {
+    const result = await router.classify(incidents['INC-001']);
+    expect(result.confidence).toBeGreaterThanOrEqual(0.0);
+    expect(result.confidence).toBeLessThanOrEqual(1.0);
   });
 
   it('route returns object with routeResult and handlerResponse', async () => {
