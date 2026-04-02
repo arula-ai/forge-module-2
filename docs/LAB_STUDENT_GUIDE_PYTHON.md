@@ -194,6 +194,16 @@ check that you're storing results using `step.output_key` as the dictionary key.
 > 💡 **Think about it**: What happens if the LLM returns invalid JSON? How does
 > your error handling deal with it? What would you do differently in production?
 
+> **Stretch Goal:** Add a 4th step that generates a severity score 1-10. Does your chain still work with 4 steps? Do the existing tests still pass? What would you need to add to `cached_responses.json` to make this work in cached mode?
+
+<details>
+<summary>If you're stuck on the Chain</summary>
+
+- `KeyError` on format: Check that you're using `self._format_prompt(step.user_prompt_template, state)`, not building the string manually
+- Only 1-2 steps complete: Your error handling might be crashing the loop. Wrap each step in its own try/except
+- `ValueError: Failed to parse`: The LLM returned non-JSON. Check that you're passing `system=step.system_prompt`
+</details>
+
 ---
 
 ## Phase 3: Build the Router (15 minutes)
@@ -296,6 +306,16 @@ All 7 router tests should pass. The most important one is
 
 > 💡 **Think about it**: The classification prompt lists all categories. What if
 > you had 50 categories? How would you handle that? (Hint: hierarchical routing)
+
+> **Stretch Goal:** What happens if you set `confidence_threshold` to 0.0? To 1.0? Try both. Can you write a test that verifies edge-case behavior at these extremes?
+
+<details>
+<summary>If you're stuck on the Router</summary>
+
+- Everything classifies as OTHER: Print your prompt to verify incident details are included
+- `_match_category` returns OTHER: Pass `data.get("category", "")` (the string), not the whole data dict
+- Fallback test fails: When confidence is below threshold, update `route_result.handler_name = handler.name`
+</details>
 
 ---
 
@@ -404,6 +424,16 @@ pytest tests/test_patterns.py::TestParallelHealthChecker -v
 
 > 💡 **Think about it**: Add `print(time.time())` at the start of each check.
 > What ordering do you see? How would this differ with a cloud API?
+
+> **Stretch Goal:** Add timing output showing wall-clock time for the parallel run. Then change your implementation to run checks sequentially (one at a time). Compare the wall-clock times. How much faster is the parallel version? (In cached mode they'll be similar — why?)
+
+<details>
+<summary>If you're stuck on Parallel</summary>
+
+- Tests hang forever: You're using `await` in a loop instead of `asyncio.gather`. Create all tasks first, then gather
+- One failure kills all checks: Add `return_exceptions=True` to `asyncio.gather()`
+- `_aggregate` returns wrong status: Check priority ordering — critical > error > warning > healthy
+</details>
 
 ---
 
@@ -538,40 +568,58 @@ python agent_forge.py --cached
 
 Watch the terminal come alive with colored output as each pattern executes!
 
+> **Stretch Goal:** What happens if Stage 1 (classification) fails completely? Does Stage 2 (health checks) still run? Deliberately break `router.route()` by making it raise an exception, then run the pipeline. Verify that your error handling lets the remaining stages continue.
+
+<details>
+<summary>If you're stuck on the Orchestrator</summary>
+
+- `NameError: classification is not defined`: Initialize all result variables as empty dicts BEFORE the try blocks
+- Only 1-2 stages run: Each stage needs its own independent try/except. Don't nest them.
+- `ImportError`: Add `from .chain import create_chain_state` and `import json` at the top
+</details>
+
 ---
 
 ## Phase 6: Run Full System & Experiments (10 minutes)
 
-### 6.1 Process All Incidents
+### 6.1 Experiment: Temperature and Confidence
 
-```bash
-python agent_forge.py
-```
+**Do:** Change `MODEL_TEMPERATURE` to `0.9` in `.env`. Run `python agent_forge.py --incident INC-001` (live mode, NOT cached) three times.
 
-Watch how each incident gets classified differently, routed to different specialists,
-and produces different diagnostic results.
+**Observe:** Does the classification confidence change? Does the router pick a different handler? Are the results consistent across runs?
 
-### 6.2 Experiment: Change the Temperature
+**Learn:** Temperature controls randomness. Higher temperature = less predictable classification = more fallback handler activations. This is why production systems use low temperature for structured tasks.
 
-In your `.env` file, try changing `MODEL_TEMPERATURE=0.3` to `MODEL_TEMPERATURE=0.9`.
-Run again. Notice the difference in classification confidence and recommendation creativity.
+> If you're in cached mode, nothing will change — cached responses are deterministic by design. That's exactly why we have a cached mode: reproducible results for testing.
 
-### 6.3 Experiment: Add a New Incident
+### 6.2 Experiment: Break and Recover
 
-Create a new incident in `data/incidents.json`:
+**Do:** Comment out the health check stage in your `process_incident()`. Run the full system with `--cached`.
+
+**Observe:** Does the pipeline complete? What does the report look like with a missing stage? Is `stages_completed` shorter? Is `health_report` empty?
+
+**Learn:** The orchestrator's try/except per stage means partial results are still useful. This is graceful degradation — a key production pattern. A broken health checker shouldn't prevent classification and diagnosis.
+
+### 6.3 Experiment: The Unknown Incident
+
+**Do:** Add a new incident to `data/incidents.json`:
 ```json
 {
   "id": "INC-005",
-  "timestamp": "2026-01-15T18:00:00Z",
+  "timestamp": "2026-01-15T20:15:00Z",
   "source": "security-scanner",
   "severity": "critical",
-  "title": "Unusual login patterns detected",
-  "description": "Security scanner flagged 500 failed login attempts from 3 IP addresses targeting admin accounts in the last 15 minutes.",
-  "logs": "2026-01-15T17:45:00Z WARN [auth] 50 failed logins for admin@company.com from 45.33.22.11"
+  "title": "Unauthorized API access — brute force detected",
+  "description": "Security scanner detected 500 failed authentication attempts from IP 203.0.113.42 in the last 15 minutes. Target: /api/admin endpoint. No successful logins.",
+  "logs": "2026-01-15T20:00:00Z WARN  [auth] Failed login attempt for admin from 203.0.113.42\n2026-01-15T20:05:00Z ERROR [security] 200 failed attempts from 203.0.113.42 in 5 minutes\n2026-01-15T20:10:00Z ERROR [security] 400 failed attempts — possible brute force\n2026-01-15T20:15:00Z CRITICAL [security] Rate limit threshold exceeded, IP not blocked"
 }
 ```
 
-Run again and observe how the router classifies it. Does it pick the right handler?
+Run classification on it with `python agent_forge.py --incident INC-005 --cached`.
+
+**Observe:** Which category does it get routed to? Is there a handler for it? What does the fallback handler produce?
+
+**Learn:** The router falls back to `general/other` for unknown incident types. In production, you'd add new handlers as new categories emerge. The system degrades gracefully rather than crashing on unknown input.
 
 ---
 
