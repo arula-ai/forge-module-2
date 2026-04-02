@@ -14,6 +14,9 @@ build/
 # Node
 node_modules/
 
+# Grading output
+GRADE_REPORT.md
+
 # OS
 .DS_Store
 Thumbs.db
