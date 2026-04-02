@@ -1,0 +1,99 @@
+{
+  "classify_database": {
+    "category": "technical/database",
+    "confidence": 0.95,
+    "reasoning": "The incident describes database connection pool exhaustion with specific PostgreSQL metrics. This is a database infrastructure issue requiring DBA and backend engineering response."
+  },
+  "classify_billing": {
+    "category": "billing/payment",
+    "confidence": 0.92,
+    "reasoning": "The incident involves duplicate payment charges from webhook processing. This requires billing team investigation and customer refund processing."
+  },
+  "classify_network": {
+    "category": "technical/network",
+    "confidence": 0.91,
+    "reasoning": "The incident shows API gateway 503 errors with upstream timeouts and failed health checks. This is a network/infrastructure issue requiring SRE response."
+  },
+  "classify_general": {
+    "category": "general/email",
+    "confidence": 0.88,
+    "reasoning": "The incident involves delayed email delivery due to queue buildup and worker failures. This is an application infrastructure issue."
+  },
+  "chain_parse": {
+    "errors_found": 5,
+    "error_types": ["timeout", "connection_exhaustion", "retry_failure"],
+    "time_range": "14:11:00 - 14:18:00",
+    "affected_services": ["user-api", "order-api", "monitoring"]
+  },
+  "chain_analyze": {
+    "root_cause": "Connection pool sized at 200 is insufficient for current load. Connection leak or slow query is preventing connection return to pool.",
+    "impact": "Three critical services unable to serve requests. User-facing errors for all database-dependent operations.",
+    "severity_assessment": "HIGH — Customer-impacting, revenue-affecting"
+  },
+  "chain_recommend": {
+    "immediate_actions": [
+      "Increase connection pool to 300 as temporary fix",
+      "Identify and kill long-running queries",
+      "Restart affected application instances in rolling fashion"
+    ],
+    "investigation_steps": [
+      "Check for connection leaks in recent deployments",
+      "Review slow query log for queries exceeding 5 seconds",
+      "Analyze connection lifetime distribution"
+    ],
+    "prevention": [
+      "Implement connection pool monitoring with alerting at 80%",
+      "Add connection timeout and validation on borrow",
+      "Set up automated connection leak detection"
+    ]
+  },
+  "parallel_memory_check": {
+    "status": "healthy",
+    "usage_percent": 68,
+    "details": "Memory utilization within normal range. No memory leak indicators."
+  },
+  "parallel_cpu_check": {
+    "status": "healthy",
+    "usage_percent": 34,
+    "details": "CPU utilization low. Not a contributing factor to the incident."
+  },
+  "parallel_disk_check": {
+    "status": "healthy",
+    "usage_percent": 45,
+    "details": "Disk I/O within normal parameters. No disk-related bottlenecks."
+  },
+  "parallel_network_check": {
+    "status": "warning",
+    "details": "Elevated connection count on port 5432. 200 established connections to PostgreSQL. Connection queue detected."
+  },
+  "handler_database": {
+    "handler": "Database Specialist",
+    "summary": "Database connection pool exhaustion detected. Immediate action: increase pool size and investigate connection leaks.",
+    "priority": "high",
+    "escalation_needed": true
+  },
+  "handler_billing": {
+    "handler": "Billing Specialist",
+    "summary": "Duplicate webhook processing causing double charges. Immediate action: implement idempotency check and process refunds.",
+    "priority": "high",
+    "escalation_needed": true
+  },
+  "handler_network": {
+    "handler": "Network Specialist",
+    "summary": "API gateway upstream failures causing 503 errors. Immediate action: investigate backend instance health and circuit breaker state.",
+    "priority": "critical",
+    "escalation_needed": true
+  },
+  "handler_email": {
+    "handler": "Email Specialist",
+    "summary": "Email queue backed up with worker failures. Immediate action: restart workers and investigate OOM conditions.",
+    "priority": "medium",
+    "escalation_needed": false
+  },
+  "handler_general": {
+    "handler": "General Specialist",
+    "summary": "Incident requires further triage. Routing to general support for initial assessment.",
+    "priority": "medium",
+    "escalation_needed": false
+  }
+}
