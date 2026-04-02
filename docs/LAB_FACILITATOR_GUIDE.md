@@ -9,7 +9,7 @@
 | Item | Detail |
 |------|--------|
 | Lab Duration | 110 minutes (90 min working + 20 min buffer) |
-| Test Count | 20 tests (Python) / 18 tests (Node) |
+| Test Count | 20 tests (Python) / 20 tests (Node) |
 | Patterns | Chain → Router → Parallel → Orchestrator |
 | Model | Qwen3.5:4b via Ollama (local) |
 | Fallback | `--cached` flag for offline mode |
@@ -602,4 +602,4 @@ Report these findings in the weekly instructor sync.
 
 ---
 
-*Last updated: [Session Date] | Version: 1.0*
+*Last updated: 2026-04-02 | Version: 1.1*

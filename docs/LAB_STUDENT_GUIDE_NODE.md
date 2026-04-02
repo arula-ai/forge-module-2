@@ -10,6 +10,40 @@
 agentic design patterns. Your system will route, chain, parallelize, and orchestrate
 using a local LLM (Qwen3.5:4b via Ollama) — no API keys, no cloud, no cost.
 
+```
+╔══════════════════════════════════════════════════╗
+║ AgentForge — Incident Response System            ║
+║ Module 2: Core Agentic Patterns                  ║
+╚══════════════════════════════════════════════════╝
+
+Processing: INC-001 — Database connection pool exhausted
+
+  Stage 1: Classification & Routing
+  🎯 Classified: technical/database (95%)
+  🔀 Routing to: Database Specialist
+
+  Stage 2: Health Checks
+  🔄 Running parallel health checks...
+    ✓ Memory Analysis    Normal at 68%         1ms
+    ✓ CPU Analysis       Low at 34%            1ms
+    ✓ Disk I/O Analysis  Normal parameters     1ms
+    ⚠ Network Analysis   Elevated connections  1ms
+  📊 Health: WARNING (2ms total)
+
+  Stage 3: Diagnostic Chain
+  ⏳ Parse Logs...
+  ✓ Parse Logs (1ms)
+  ⏳ Analyze Root Cause...
+  ✓ Analyze Root Cause (1ms)
+  ⏳ Generate Recommendations...
+  ✓ Generate Recommendations (1ms)
+
+  ── 📋 INC-001: Database connection pool exhausted ──
+  Pipeline complete — 4 stages
+```
+
+> This is what your system will produce when all 4 patterns are implemented. Right now, every method throws an Error. You'll build this one pattern at a time.
+
 ---
 
 ## 📋 Prerequisites
@@ -28,7 +62,7 @@ npm run verify   # Should show "All checks passed"
 ## 📁 Project Structure
 
 ```
-agentforge-node/
+node/
 ├── agent_forge.js              ← Main entry point (provided)
 ├── package.json                ← Dependencies (provided)
 ├── .env                        ← Configuration (provided)
@@ -51,7 +85,7 @@ agentforge-node/
 ## Phase 1: Environment Setup (20 minutes)
 
 ```bash
-cd agentforge-node
+cd node
 npm install
 npm run verify
 ```
@@ -65,8 +99,8 @@ Familiarize yourself with `patterns/llm_client.js`. The `LLMClient.chat()` metho
 
 ## Phase 2: Build the Sequential Chain (15 minutes)
 
-Open `patterns/chain.js`. The `CHAIN_STEPS` array defines 3 steps (Parse Logs →
-Analyze Root Cause → Recommend). Implement `execute()`:
+Open `patterns/chain.js`. The `buildSteps()` function defines 3 steps (Parse Logs →
+Analyze Root Cause → Recommend), stored as `this.steps` in the constructor. Implement `execute()`:
 
 ```javascript
 async execute(state) {
@@ -75,7 +109,7 @@ async execute(state) {
 
     try {
       // 1. Build prompt from template
-      const prompt = step.promptTemplate(state);
+      const prompt = formatPrompt(step.userPromptTemplate, state);
 
       // 2. Call the LLM
       const response = await this.llm.chat(prompt, {
@@ -353,7 +387,6 @@ async processIncident(incident) {
   // ── Stage 3: Diagnostic Chain ──
   console.log(chalk.bold('\n  Stage 3: Diagnostic Chain'));
   try {
-    const { createChainState } = await import('./chain.js');
     const state = createChainState(incident);
     const result = await this.diagnosticChain.execute(state);
     diagnosticResults = result.results;
@@ -380,7 +413,7 @@ async processIncident(incident) {
     errors,
   };
 
-  this.displayReport(report);
+  displayReport(report);
   return report;
 }
 ```

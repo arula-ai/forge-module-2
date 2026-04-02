@@ -59,7 +59,7 @@ The 4 patterns and their student-implemented methods:
 ### Testing
 - All tests use `CachedLLMClient` — they MUST pass without Ollama running
 - Python: 20 tests across 4 test classes (chain: 4, router: 7, parallel: 4, orchestrator: 5)
-- Node: 18 tests (same structure, 2 fewer)
+- Node: 20 tests (same structure)
 - Tests verify pattern behavior, not LLM output quality
 
 ## Spec & Design Doc

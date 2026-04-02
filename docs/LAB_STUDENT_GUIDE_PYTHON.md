@@ -59,7 +59,7 @@ python verify_setup.py
 ## 📁 Project Structure
 
 ```
-agentforge-python/
+python/
 ├── agent_forge.py              ← Main entry point (provided)
 ├── requirements.txt            ← Dependencies (provided)
 ├── verify_setup.py             ← Setup verification (provided)
@@ -505,11 +505,7 @@ async def process_incident(self, incident: dict) -> IncidentReport:
     # ── Stage 3: Diagnostic Chain ──
     console.print(f"\n  [bold]Stage 3: Diagnostic Chain[/bold]")
     try:
-        chain_state = ChainState(
-            incident_id=incident["id"],
-            raw_input=json.dumps(incident),
-            logs=incident.get("logs", ""),
-        )
+        chain_state = create_chain_state(incident)
         chain_state = await self.diagnostic_chain.execute(chain_state)
         chain_results = chain_state.results
         stages_completed.append(PipelineStage.DIAGNOSING.value)

@@ -10,7 +10,7 @@
 □ Verify Ollama is running on instructor machine: ollama serve
 □ Pull model: ollama pull qwen3.5:4b
 □ Test both Python and Node demo environments end-to-end
-□ Open fallback cached responses in /data/cached_responses/
+□ Open fallback cached responses in /data/cached_responses.json
 □ Pre-load terminal with 'rich' formatted output visible for wow factor
 □ Verify student environment access (poll in Slack 30 min prior)
 □ Queue up the "incident simulation" demo data
@@ -322,9 +322,9 @@ Build a router that classifies incident reports:
 
 **Side-by-side comparison:**
 
-| Aspect | Python (asyncio) | Node.js (Promise.all) |
-|--------|------------------|----------------------|
-| Syntax | `asyncio.gather(*tasks)` | `Promise.all(tasks)` |
+| Aspect | Python (asyncio) | Node.js (Promise.allSettled) |
+|--------|------------------|------------------------------|
+| Syntax | `asyncio.gather(*tasks)` | `Promise.allSettled(tasks)` |
 | Error handling | `return_exceptions=True` | `.allSettled()` |
 | Timeouts | `asyncio.wait_for()` | `Promise.race([task, timeout])` |
 | Cancellation | `task.cancel()` | `AbortController` |
